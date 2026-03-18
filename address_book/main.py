@@ -4,11 +4,12 @@ from geopy.distance import geodesic
 
 from .database import SessionLocal, engine, Base
 from . import crud, schemas
-from .logger import logger
+from .logger import log_handle
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Address Book API", version="1.0")
+logger = log_handle()
 
 # Dependency
 def get_db():
