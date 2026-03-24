@@ -4,7 +4,8 @@ from geopy.distance import geodesic
 
 from .database import SessionLocal, engine, Base
 from . import crud, schemas
-from .logger import log_handle
+from .logger import log_handle 
+import sys, os
 
 Base.metadata.create_all(bind=engine)
 
@@ -46,14 +47,20 @@ def update_address(id: int, data: schemas.AddressUpdate, db: Session = Depends(g
 # DELETE
 @app.delete("/addresses/{id}")
 def delete_address(id: int, db: Session = Depends(get_db)):
-    logger.info(f"Deleting address {id}")
-    deleted = crud.delete_address(db, id)
+    try:
+        logger.info(f"Deleting address {id}")
+        deleted = crud.delete_address(db, id)
 
-    if not deleted:
-        logger.error("Address not found")
-        raise HTTPException(status_code=404, detail="Address not found")
+        if not deleted:
+            logger.error("Address not found")
+            raise HTTPException(status_code=404, detail="Address not found")
 
-    return {"message": "Deleted successfully"}
+        return {"message": "Deleted successfully"}
+    
+    except Exception as e:
+        line_no = sys.exc_info()[-1].tb_lineno 
+        logger.error("Error occured at" , line_no , str(e))
+    
 
 # NEARBY
 @app.get("/addresses/nearby", response_model=list[schemas.AddressOut])
@@ -61,17 +68,22 @@ def get_nearby(
     lat: float = Query(..., ge=-90, le=90),
     lon: float = Query(..., ge=-180, le=180),
     distance: float = Query(5, gt=0),
-    db: Session = Depends(get_db)
-):
-    logger.info(f"Finding nearby addresses within {distance} km")
+    db: Session = Depends(get_db)): 
+    
+    try:
+        logger.info(f"Finding nearby addresses within {distance} km")
 
-    addresses = crud.get_addresses(db)
-    result = []
+        addresses = crud.get_addresses(db)
+        result = []
 
-    for addr in addresses:
-        dist = geodesic((lat, lon), (addr.latitude, addr.longitude)).km
+        for addr in addresses:
+            dist = geodesic((lat, lon), (addr.latitude, addr.longitude)).km
 
-        if dist <= distance:
-            result.append(addr)
+            if dist <= distance:
+                result.append(addr)
 
-    return result
+        return result 
+    except Exception as e:
+        line_no = sys.exc_info()[-1].tb_lineno 
+        logger.error("Error occured at" , line_no , str(e))
+        
